@@ -1,12 +1,12 @@
 use cosmwasm_schema::cw_serde;
-use cosmwasm_std::{to_json_binary, Binary, CosmosMsg, StdResult, Uint128, WasmMsg};
+use cosmwasm_std::{to_json_binary, Binary, CosmosMsg, StdResult, Uint256, WasmMsg};
 
 /// Cw20ReceiveMsg should be de/serialized under `Receive()` variant in a ExecuteMsg
 #[cw_serde]
 
 pub struct Cw20ReceiveMsg {
     pub sender: String,
-    pub amount: Uint128,
+    pub amount: Uint256,
     pub msg: Binary,
 }
 

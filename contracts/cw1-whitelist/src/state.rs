@@ -1,10 +1,9 @@
-use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
 use cosmwasm_std::Addr;
 use cw_storage_plus::Item;
 
-#[derive(Serialize, Deserialize, Clone, PartialEq, Eq, JsonSchema, Debug, Default)]
+#[derive(Serialize, Deserialize, Clone, PartialEq, Eq, Debug, Default)]
 pub struct AdminList {
     pub admins: Vec<Addr>,
     pub mutable: bool,

@@ -29,6 +29,7 @@ serde = { workspace = true }
 thiserror = { workspace = true }
 
 [dev-dependencies]
+easy-addr = { workspace = true }
 anyhow = "1"
 assert_matches = "1"
 cw-multi-test = { workspace = true }

@@ -1,8 +1,8 @@
-use crate::error::ContractError;
 use cosmwasm_schema::cw_serde;
-use cosmwasm_std::{Coin, Uint128};
+use cosmwasm_std::{Coin, Uint256};
 use cw20::Cw20Coin;
-use std::convert::TryInto;
+
+use crate::ContractError;
 
 #[cw_serde]
 pub enum Amount {
@@ -13,26 +13,29 @@ pub enum Amount {
 
 impl Amount {
     // TODO: write test for this
-    pub fn from_parts(denom: String, amount: Uint128) -> Self {
+    pub fn from_parts(denom: String, amount: Uint256) -> Self {
         if denom.starts_with("cw20:") {
             let address = denom.get(5..).unwrap().into();
             Amount::Cw20(Cw20Coin { address, amount })
         } else {
-            Amount::Native(Coin { denom, amount })
+            Amount::Native(Coin {
+                denom,
+                amount: amount.into(),
+            })
         }
     }
 
     pub fn cw20(amount: u128, addr: &str) -> Self {
         Amount::Cw20(Cw20Coin {
             address: addr.into(),
-            amount: Uint128::new(amount),
+            amount: amount.into(),
         })
     }
 
     pub fn native(amount: u128, denom: &str) -> Self {
         Amount::Native(Coin {
             denom: denom.to_string(),
-            amount: Uint128::new(amount),
+            amount: amount.into(),
         })
     }
 }
@@ -45,16 +48,16 @@ impl Amount {
         }
     }
 
-    pub fn amount(&self) -> Uint128 {
+    pub fn amount(&self) -> Uint256 {
         match self {
             Amount::Native(c) => c.amount,
-            Amount::Cw20(c) => c.amount,
+            Amount::Cw20(c) => c.amount.into(),
         }
     }
 
     /// convert the amount into u64
     pub fn u64_amount(&self) -> Result<u64, ContractError> {
-        Ok(self.amount().u128().try_into()?)
+        Ok(self.amount().to_string().parse::<u64>()?)
     }
 
     pub fn is_empty(&self) -> bool {

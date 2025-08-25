@@ -1,8 +1,5 @@
-use schemars::JsonSchema;
-use serde::{Deserialize, Serialize};
-
 use cosmwasm_schema::cw_serde;
-use cosmwasm_std::{Addr, Binary, Uint128};
+use cosmwasm_std::{Addr, Binary, Uint256};
 
 use crate::logo::LogoInfo;
 use cw_utils::Expiration;
@@ -53,7 +50,7 @@ pub enum Cw20QueryMsg {
 
 #[cw_serde]
 pub struct BalanceResponse {
-    pub balance: Uint128,
+    pub balance: Uint256,
 }
 
 #[cw_serde]
@@ -61,12 +58,13 @@ pub struct TokenInfoResponse {
     pub name: String,
     pub symbol: String,
     pub decimals: u8,
-    pub total_supply: Uint128,
+    pub total_supply: Uint256,
 }
 
-#[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug, Default)]
+#[cw_serde]
+#[derive(Default)]
 pub struct AllowanceResponse {
-    pub allowance: Uint128,
+    pub allowance: Uint256,
     pub expires: Expiration,
 }
 
@@ -76,10 +74,11 @@ pub struct MinterResponse {
     /// cap is a hard cap on total supply that can be achieved by minting.
     /// Note that this refers to total_supply.
     /// If None, there is unlimited cap.
-    pub cap: Option<Uint128>,
+    pub cap: Option<Uint256>,
 }
 
-#[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug, Default)]
+#[cw_serde]
+#[derive(Default)]
 pub struct MarketingInfoResponse {
     /// A URL pointing to the project behind this token.
     pub project: Option<String>,
@@ -102,11 +101,12 @@ pub struct DownloadLogoResponse {
 #[cw_serde]
 pub struct AllowanceInfo {
     pub spender: String,
-    pub allowance: Uint128,
+    pub allowance: Uint256,
     pub expires: Expiration,
 }
 
-#[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug, Default)]
+#[cw_serde]
+#[derive(Default)]
 pub struct AllAllowancesResponse {
     pub allowances: Vec<AllowanceInfo>,
 }
@@ -114,16 +114,16 @@ pub struct AllAllowancesResponse {
 #[cw_serde]
 pub struct SpenderAllowanceInfo {
     pub owner: String,
-    pub allowance: Uint128,
+    pub allowance: Uint256,
     pub expires: Expiration,
 }
 
-#[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug, Default)]
+#[cw_serde]
 pub struct AllSpenderAllowancesResponse {
     pub allowances: Vec<SpenderAllowanceInfo>,
 }
 
-#[derive(Serialize, Deserialize, Clone, PartialEq, Eq, JsonSchema, Debug, Default)]
+#[cw_serde]
 pub struct AllAccountsResponse {
     pub accounts: Vec<String>,
 }

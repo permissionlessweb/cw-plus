@@ -1,4 +1,3 @@
-use schemars::JsonSchema;
 use std::fmt;
 use std::ops::{AddAssign, Sub};
 
@@ -82,7 +81,7 @@ pub fn execute_execute<T>(
     msgs: Vec<CosmosMsg<T>>,
 ) -> Result<Response<T>, ContractError>
 where
-    T: Clone + fmt::Debug + PartialEq + JsonSchema,
+    T: Clone + fmt::Debug + PartialEq,
 {
     let cfg = ADMIN_LIST.load(deps.storage)?;
 
@@ -174,7 +173,7 @@ pub fn execute_increase_allowance<T>(
     expires: Option<Expiration>,
 ) -> Result<Response<T>, ContractError>
 where
-    T: Clone + fmt::Debug + PartialEq + JsonSchema,
+    T: Clone + fmt::Debug + PartialEq,
 {
     let cfg = ADMIN_LIST.load(deps.storage)?;
     ensure!(cfg.is_admin(&info.sender), ContractError::Unauthorized {});
@@ -228,7 +227,7 @@ pub fn execute_decrease_allowance<T>(
     expires: Option<Expiration>,
 ) -> Result<Response<T>, ContractError>
 where
-    T: Clone + fmt::Debug + PartialEq + JsonSchema,
+    T: Clone + fmt::Debug + PartialEq,
 {
     let cfg = ADMIN_LIST.load(deps.storage)?;
     ensure!(cfg.is_admin(&info.sender), ContractError::Unauthorized {});
@@ -280,7 +279,7 @@ pub fn execute_set_permissions<T>(
     perm: Permissions,
 ) -> Result<Response<T>, ContractError>
 where
-    T: Clone + fmt::Debug + PartialEq + JsonSchema,
+    T: Clone + fmt::Debug + PartialEq,
 {
     let cfg = ADMIN_LIST.load(deps.storage)?;
     ensure!(cfg.is_admin(&info.sender), ContractError::Unauthorized {});
@@ -471,9 +470,9 @@ pub fn migrate(deps: DepsMut, _env: Env, _msg: Empty) -> Result<Response, Contra
 #[cfg(test)]
 mod tests {
     use cosmwasm_std::testing::{
-        mock_dependencies, mock_env, mock_info, MockApi, MockQuerier, MockStorage,
+        message_info, mock_dependencies, mock_env, MockApi, MockQuerier, MockStorage,
     };
-    use cosmwasm_std::{coin, coins, OwnedDeps, StakingMsg, SubMsg, Timestamp};
+    use cosmwasm_std::{coin, coins, Addr, OwnedDeps, StakingMsg, SubMsg, Timestamp};
 
     use cw1_whitelist::msg::AdminListResponse;
     use cw2::{get_contract_version, ContractVersion};
@@ -604,7 +603,7 @@ mod tests {
                 admins,
                 mutable: true,
             };
-            let owner = mock_info(OWNER, &[]);
+            let owner = message_info(&Addr::unchecked(OWNER), &[]);
 
             instantiate(
                 deps.as_mut().branch(),
@@ -920,7 +919,7 @@ mod tests {
         #[test]
         fn non_owner_update() {
             let Suite { mut deps, .. } = SuiteConfig::new().with_admin(ADMIN1).init();
-            let info = mock_info(ADMIN1, &[]);
+            let info = message_info(&Addr::unchecked(ADMIN1), &[]);
 
             let rsp = execute(
                 deps.as_mut(),
@@ -949,7 +948,7 @@ mod tests {
         #[test]
         fn non_admin_fail_to_update() {
             let Suite { mut deps, .. } = SuiteConfig::new().init();
-            let info = mock_info(ADMIN1, &[]);
+            let info = message_info(&Addr::unchecked(ADMIN1), &[]);
 
             execute(
                 deps.as_mut(),
@@ -1285,10 +1284,11 @@ mod tests {
                     amount: coin(2, TOKEN2),
                     expires: Some(EXPIRED_TIME),
                 },
-            );
+            )
+            .unwrap_err();
             assert_eq!(
-                rsp,
-                Err(ContractError::SettingExpiredAllowance(EXPIRED_TIME))
+                rsp.to_string(),
+                ContractError::SettingExpiredAllowance(EXPIRED_TIME).to_string()
             );
 
             assert_eq!(
@@ -1689,7 +1689,7 @@ mod tests {
             }
             .into()];
 
-            let info = mock_info(SPENDER1, &[]);
+            let info = message_info(&Addr::unchecked(SPENDER1), &[]);
 
             let rsp = execute(
                 deps.as_mut(),
@@ -1731,7 +1731,7 @@ mod tests {
             }
             .into()];
 
-            let info = mock_info(SPENDER1, &[]);
+            let info = message_info(&Addr::unchecked(SPENDER1), &[]);
 
             execute(
                 deps.as_mut(),
@@ -1761,7 +1761,7 @@ mod tests {
             }
             .into()];
 
-            let info = mock_info(SPENDER1, &[]);
+            let info = message_info(&Addr::unchecked(SPENDER1), &[]);
 
             execute(
                 deps.as_mut(),
@@ -1799,7 +1799,7 @@ mod tests {
             }
             .into()];
 
-            let info = mock_info(SPENDER1, &[]);
+            let info = message_info(&Addr::unchecked(SPENDER1), &[]);
             execute(
                 deps.as_mut(),
                 mock_env(),
@@ -1829,7 +1829,7 @@ mod tests {
             }
             .into()];
 
-            let info = mock_info(SPENDER1, &[]);
+            let info = message_info(&Addr::unchecked(SPENDER1), &[]);
             execute(
                 deps.as_mut(),
                 mock_env(),
@@ -1856,7 +1856,7 @@ mod tests {
             }
             .into()];
 
-            let info = mock_info(ADMIN1, &[]);
+            let info = message_info(&Addr::unchecked(ADMIN1), &[]);
 
             let rsp = execute(
                 deps.as_mut(),
@@ -1889,7 +1889,7 @@ mod tests {
         fn admin() {
             let Suite { mut deps, .. } = SuiteConfig::new().with_admin(ADMIN1).init();
 
-            let info = mock_info(ADMIN1, &[]);
+            let info = message_info(&Addr::unchecked(ADMIN1), &[]);
 
             let msgs = vec![CosmosMsg::Custom(Empty {})];
 
@@ -1913,7 +1913,7 @@ mod tests {
         fn non_admin() {
             let Suite { mut deps, .. } = SuiteConfig::new().with_admin(ADMIN1).init();
 
-            let info = mock_info(SPENDER1, &[]);
+            let info = message_info(&Addr::unchecked(SPENDER1), &[]);
 
             let msgs = vec![CosmosMsg::Custom(Empty {})];
 
@@ -1964,7 +1964,7 @@ mod tests {
                 let rsp = execute(
                     deps.as_mut(),
                     mock_env(),
-                    mock_info(SPENDER1, &[]),
+                    message_info(&Addr::unchecked(SPENDER1), &[]),
                     ExecuteMsg::Execute { msgs: msgs.clone() },
                 )
                 .unwrap();
@@ -2010,7 +2010,7 @@ mod tests {
                 let rsp = execute(
                     deps.as_mut(),
                     mock_env(),
-                    mock_info(ADMIN1, &[]),
+                    message_info(&Addr::unchecked(ADMIN1), &[]),
                     ExecuteMsg::Execute { msgs: msgs.clone() },
                 )
                 .unwrap();
@@ -2056,7 +2056,7 @@ mod tests {
                 execute(
                     deps.as_mut(),
                     mock_env(),
-                    mock_info(SPENDER1, &[]),
+                    message_info(&Addr::unchecked(SPENDER1), &[]),
                     ExecuteMsg::Execute { msgs },
                 )
                 .unwrap_err();
@@ -2227,7 +2227,7 @@ mod tests {
     fn permissions_allowances_independent() {
         let mut deps = mock_dependencies();
 
-        let owner = addr!("admin0001");
+        let owner = &Addr::unchecked(addr!("admin0001"));
         let admins = vec![owner.to_string()];
 
         // spender1 has every permission to stake
@@ -2248,7 +2248,7 @@ mod tests {
             withdraw: true,
         };
 
-        let info = mock_info(owner, &[]);
+        let info = message_info(owner, &[]);
         // Instantiate a contract with admins
         let instantiate_msg = InstantiateMsg {
             admins,
@@ -2259,7 +2259,7 @@ mod tests {
         // setup permission and then allowance and check if changed
         let setup_perm_msg = ExecuteMsg::SetPermissions {
             spender: spender1.to_string(),
-            permissions: perm,
+            permissions: perm.clone(),
         };
         execute(deps.as_mut(), mock_env(), info.clone(), setup_perm_msg).unwrap();
 
@@ -2285,7 +2285,7 @@ mod tests {
 
         let setup_perm_msg = ExecuteMsg::SetPermissions {
             spender: spender2.to_string(),
-            permissions: perm,
+            permissions: perm.clone(),
         };
         execute(deps.as_mut(), mock_env(), info, setup_perm_msg).unwrap();
 
