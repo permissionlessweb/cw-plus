@@ -20,7 +20,7 @@ impl Amount {
         } else {
             Amount::Native(Coin {
                 denom,
-                amount: amount.into(),
+                amount: amount,
             })
         }
     }
@@ -51,7 +51,7 @@ impl Amount {
     pub fn amount(&self) -> Uint256 {
         match self {
             Amount::Native(c) => c.amount,
-            Amount::Cw20(c) => c.amount.into(),
+            Amount::Cw20(c) => c.amount,
         }
     }
 

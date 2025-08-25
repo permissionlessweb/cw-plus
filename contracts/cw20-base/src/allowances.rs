@@ -69,7 +69,7 @@ pub fn execute_decrease_allowance(
         allowance.allowance = allowance
             .allowance
             .checked_sub(amount)
-            .map_err(|e| StdError::msg(e))?;
+            .map_err(StdError::msg)?;
         if let Some(exp) = expires {
             if exp.is_expired(&env.block) {
                 return Err(ContractError::InvalidExpiration {});
@@ -110,7 +110,7 @@ pub fn deduct_allowance(
                     a.allowance = a
                         .allowance
                         .checked_sub(amount)
-                        .map_err(|e| StdError::msg(e))?;
+                        .map_err(StdError::msg)?;
                     Ok(a)
                 }
             }
@@ -234,7 +234,7 @@ pub fn execute_send_from(
     // create a send message
     let msg = Cw20ReceiveMsg {
         sender: info.sender.into(),
-        amount: amount.into(),
+        amount: amount,
         msg,
     }
     .into_cosmos_msg(contract)?;

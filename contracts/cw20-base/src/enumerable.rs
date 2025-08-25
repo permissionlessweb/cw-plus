@@ -28,7 +28,7 @@ pub fn query_owner_allowances(
         .map(|item| {
             item.map(|(addr, allow)| AllowanceInfo {
                 spender: addr.into(),
-                allowance: allow.allowance.into(),
+                allowance: allow.allowance,
                 expires: allow.expires,
             })
         })
@@ -53,7 +53,7 @@ pub fn query_spender_allowances(
         .map(|item| {
             item.map(|(addr, allow)| SpenderAllowanceInfo {
                 owner: addr.into(),
-                allowance: allow.allowance.into(),
+                allowance: allow.allowance,
                 expires: allow.expires,
             })
         })

@@ -317,7 +317,7 @@ pub fn execute_burn(
     )?;
     // reduce total_supply
     TOKEN_INFO.update(deps.storage, |mut info| -> StdResult<_> {
-        info.total_supply = info.total_supply.checked_sub(amount.into())?;
+        info.total_supply = info.total_supply.checked_sub(amount)?;
         Ok(info)
     })?;
 
@@ -405,7 +405,7 @@ pub fn execute_send(
         .add_message(
             Cw20ReceiveMsg {
                 sender: info.sender.into(),
-                amount: amount.into(),
+                amount: amount,
                 msg,
             }
             .into_cosmos_msg(contract)?,
@@ -577,7 +577,7 @@ pub fn query_balance(deps: Deps, address: String) -> StdResult<BalanceResponse> 
         .may_load(deps.storage, &address)?
         .unwrap_or_default();
     Ok(BalanceResponse {
-        balance: balance.into(),
+        balance: balance,
     })
 }
 

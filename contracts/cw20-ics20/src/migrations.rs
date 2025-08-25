@@ -67,7 +67,7 @@ pub mod v2 {
                     })?,
                 };
                 let res: BalanceResponse = deps.querier.query(&query.into())?;
-                res.balance.into()
+                res.balance
             }
         };
 
