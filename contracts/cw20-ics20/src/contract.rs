@@ -2,7 +2,7 @@
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
     from_json, to_json_binary, Addr, Binary, Deps, DepsMut, Env, IbcMsg, IbcQuery, MessageInfo,
-    Order, PortIdResponse, Response, StdError, StdResult,
+    MigrateInfo, Order, PortIdResponse, Response, StdError, StdResult,
 };
 use semver::Version;
 
@@ -209,7 +209,12 @@ const MIGRATE_VERSION_2: &str = "0.12.0-alpha1";
 const MIGRATE_VERSION_3: &str = "0.13.0";
 
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn migrate(mut deps: DepsMut, env: Env, msg: MigrateMsg) -> Result<Response, ContractError> {
+pub fn migrate(
+    mut deps: DepsMut,
+    env: Env,
+    msg: MigrateMsg,
+    _info: MigrateInfo,
+) -> Result<Response, ContractError> {
     let version: Version = CONTRACT_VERSION.parse().map_err(from_semver)?;
     let stored = get_contract_version(deps.storage)?;
     let storage_version: Version = stored.version.parse().map_err(from_semver)?;
@@ -586,6 +591,10 @@ mod test {
             MigrateMsg {
                 default_gas_limit: Some(123456),
             },
+            MigrateInfo {
+                sender: my_account.clone(),
+                old_migrate_version: None,
+            },
         )
         .unwrap();
 
@@ -600,7 +609,7 @@ mod test {
         let cw20_addr = addr!("my-token");
         let native = "ucosm";
         let mut deps = setup(&[send_channel], &[(cw20_addr, 123456)]);
-
+        let sender = &deps.api.addr_make("anyone");
         // mock that we sent some tokens in both native and cw20 (TODO: cw20)
         // balances set high
         deps.querier
@@ -625,6 +634,10 @@ mod test {
             mock_env(),
             MigrateMsg {
                 default_gas_limit: Some(123456),
+            },
+            MigrateInfo {
+                sender: sender.clone(),
+                old_migrate_version: None,
             },
         )
         .unwrap();

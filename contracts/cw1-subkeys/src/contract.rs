@@ -5,7 +5,7 @@ use std::ops::{AddAssign, Sub};
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
     ensure, ensure_ne, to_json_binary, BankMsg, Binary, Coin, CosmosMsg, Deps, DepsMut,
-    DistributionMsg, Empty, Env, MessageInfo, Order, Response, StakingMsg, StdResult,
+    DistributionMsg, Empty, Env, MessageInfo, MigrateInfo, Order, Response, StakingMsg, StdResult,
 };
 use cw1::CanExecuteResponse;
 use cw1_whitelist::{
@@ -453,7 +453,12 @@ pub fn query_all_permissions(
 
 // Migrate contract if version is lower than current version
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn migrate(deps: DepsMut, _env: Env, _msg: Empty) -> Result<Response, ContractError> {
+pub fn migrate(
+    deps: DepsMut,
+    _env: Env,
+    _msg: Empty,
+    _info: MigrateInfo,
+) -> Result<Response, ContractError> {
     let version: Version = CONTRACT_VERSION.parse()?;
     let storage_version: Version = get_contract_version(deps.storage)?.version.parse()?;
 

@@ -4,8 +4,8 @@ use std::str::FromStr;
 use cosmwasm_std::entry_point;
 use cosmwasm_std::Order::Ascending;
 use cosmwasm_std::{
-    to_json_binary, Binary, Deps, DepsMut, Env, MessageInfo, Response, StdError, StdResult,
-    Uint128, Uint256,
+    to_json_binary, Binary, Deps, DepsMut, Env, MessageInfo, MigrateInfo, Response, StdError,
+    StdResult, Uint128, Uint256,
 };
 
 use cw2::set_contract_version;
@@ -576,9 +576,7 @@ pub fn query_balance(deps: Deps, address: String) -> StdResult<BalanceResponse> 
     let balance = BALANCES
         .may_load(deps.storage, &address)?
         .unwrap_or_default();
-    Ok(BalanceResponse {
-        balance: balance,
-    })
+    Ok(BalanceResponse { balance: balance })
 }
 
 pub fn query_token_info(deps: Deps) -> StdResult<TokenInfoResponse> {
@@ -624,7 +622,12 @@ pub fn query_download_logo(deps: Deps) -> StdResult<DownloadLogoResponse> {
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn migrate(deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, ContractError> {
+pub fn migrate(
+    deps: DepsMut,
+    _env: Env,
+    _msg: MigrateMsg,
+    _info: MigrateInfo,
+) -> Result<Response, ContractError> {
     #[allow(deprecated)]
     let original_version =
         cw2::ensure_from_older_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;

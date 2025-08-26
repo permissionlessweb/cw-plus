@@ -402,7 +402,7 @@ mod test {
     use crate::contract::{execute, migrate, query_channel};
     use crate::msg::{ExecuteMsg, MigrateMsg, TransferMsg};
     use cosmwasm_std::testing::{message_info, mock_env};
-    use cosmwasm_std::{coins, to_json_vec, Addr, IbcEndpoint, IbcMsg, IbcTimeout, Timestamp};
+    use cosmwasm_std::{coins, to_json_vec, Addr, IbcEndpoint, IbcMsg, IbcTimeout, MigrateInfo, Timestamp};
     use cw20::Cw20ReceiveMsg;
 
     use easy_addr::addr;
@@ -651,6 +651,7 @@ mod test {
     fn check_gas_limit_handles_all_cases() {
         let send_channel = "channel-9";
         let allowed = addr!("foobar");
+        let sender = &Addr::unchecked(addr!("my-account"));
         let allowed_gas = 777666;
         let mut deps = setup(&[send_channel], &[(allowed, allowed_gas)]);
 
@@ -669,6 +670,10 @@ mod test {
             mock_env(),
             MigrateMsg {
                 default_gas_limit: Some(def_limit),
+            },
+            MigrateInfo {
+                sender: sender.clone(),
+                old_migrate_version: None,
             },
         )
         .unwrap();
