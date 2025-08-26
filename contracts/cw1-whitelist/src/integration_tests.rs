@@ -71,7 +71,7 @@ impl Suite {
         let execute: ExecuteMsg = ExecuteMsg::Execute {
             msgs: vec![CosmosMsg::Wasm(WasmMsg::Execute {
                 contract_addr: target_contract.to_string(),
-                msg: to_json_binary(&msg)?,
+                msg: to_json_binary(&msg).map_err(|err| anyhow!(err))?,
                 funds: vec![],
             })],
         };

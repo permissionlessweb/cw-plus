@@ -1,9 +1,11 @@
+use std::num::ParseIntError;
+
 use cosmwasm_std::{OverflowError, StdError};
 use thiserror::Error;
 
 use cw_controllers::{AdminError, HookError};
 
-#[derive(Error, Debug, PartialEq)]
+#[derive(Error, Debug)]
 pub enum ContractError {
     #[error("{0}")]
     Std(#[from] StdError),
@@ -16,6 +18,9 @@ pub enum ContractError {
 
     #[error("{0}")]
     Overflow(#[from] OverflowError),
+
+    #[error("{0}")]
+    ParseIntError(#[from] ParseIntError),
 
     #[error("Unauthorized")]
     Unauthorized {},

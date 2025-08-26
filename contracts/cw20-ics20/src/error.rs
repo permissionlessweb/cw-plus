@@ -1,4 +1,4 @@
-use std::num::TryFromIntError;
+use std::num::{ParseIntError, TryFromIntError};
 use std::string::FromUtf8Error;
 use thiserror::Error;
 
@@ -10,13 +10,16 @@ use cw_utils::PaymentError;
 #[derive(Error, Debug)]
 pub enum Never {}
 
-#[derive(Error, Debug, PartialEq)]
+#[derive(Error, Debug)]
 pub enum ContractError {
     #[error("{0}")]
     Std(#[from] StdError),
 
     #[error("{0}")]
     Payment(#[from] PaymentError),
+
+    #[error("{0}")]
+    ParseIntError(#[from] ParseIntError),
 
     #[error("{0}")]
     Admin(#[from] AdminError),
@@ -69,7 +72,7 @@ pub enum ContractError {
 
 impl From<FromUtf8Error> for ContractError {
     fn from(_: FromUtf8Error) -> Self {
-        ContractError::Std(StdError::invalid_utf8("parsing denom key"))
+        ContractError::Std(StdError::msg("invalid_utf8: parsing denom key"))
     }
 }
 

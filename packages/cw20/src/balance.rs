@@ -62,7 +62,7 @@ impl From<Cw20CoinVerified> for Balance {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use cosmwasm_std::{Addr, Uint128};
+    use cosmwasm_std::{Addr, Uint256};
 
     #[test]
     fn default_balance_is_native() {
@@ -80,7 +80,7 @@ mod tests {
     fn displaying_cw20_balance_works() {
         let balance = Balance::Cw20(Cw20CoinVerified {
             address: Addr::unchecked("sender"),
-            amount: Uint128::zero(),
+            amount: Uint256::zero(),
         });
         assert_eq!("address: sender, amount: 0", format!("{balance}",));
     }
@@ -94,7 +94,7 @@ mod tests {
     fn cw20_balance_with_zero_amount_is_empty() {
         assert!(Balance::Cw20(Cw20CoinVerified {
             address: Addr::unchecked("sender"),
-            amount: Uint128::zero(),
+            amount: Uint256::zero(),
         })
         .is_empty());
     }

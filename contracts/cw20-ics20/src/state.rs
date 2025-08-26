@@ -1,5 +1,5 @@
 use cosmwasm_schema::cw_serde;
-use cosmwasm_std::{Addr, IbcEndpoint, StdResult, Storage, Uint128};
+use cosmwasm_std::{Addr, IbcEndpoint, StdResult, Storage, Uint256};
 use cw_controllers::Admin;
 use cw_storage_plus::{Item, Map};
 
@@ -24,8 +24,8 @@ pub const ALLOW_LIST: Map<&Addr, AllowInfo> = Map::new("allow_list");
 #[cw_serde]
 #[derive(Default)]
 pub struct ChannelState {
-    pub outstanding: Uint128,
-    pub total_sent: Uint128,
+    pub outstanding: Uint256,
+    pub total_sent: Uint256,
 }
 
 #[cw_serde]
@@ -53,14 +53,14 @@ pub struct AllowInfo {
 pub struct ReplyArgs {
     pub channel: String,
     pub denom: String,
-    pub amount: Uint128,
+    pub amount: Uint256,
 }
 
 pub fn increase_channel_balance(
     storage: &mut dyn Storage,
     channel: &str,
     denom: &str,
-    amount: Uint128,
+    amount: Uint256,
 ) -> Result<(), ContractError> {
     CHANNEL_STATE.update(storage, (channel, denom), |orig| -> StdResult<_> {
         let mut state = orig.unwrap_or_default();
@@ -75,7 +75,7 @@ pub fn reduce_channel_balance(
     storage: &mut dyn Storage,
     channel: &str,
     denom: &str,
-    amount: Uint128,
+    amount: Uint256,
 ) -> Result<(), ContractError> {
     CHANNEL_STATE.update(
         storage,
@@ -99,7 +99,7 @@ pub fn undo_reduce_channel_balance(
     storage: &mut dyn Storage,
     channel: &str,
     denom: &str,
-    amount: Uint128,
+    amount: Uint256,
 ) -> Result<(), ContractError> {
     CHANNEL_STATE.update(storage, (channel, denom), |orig| -> StdResult<_> {
         let mut state = orig.unwrap_or_default();

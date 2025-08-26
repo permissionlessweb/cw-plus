@@ -1,20 +1,19 @@
 use crate::logo::Logo;
 use cosmwasm_schema::cw_serde;
-use cosmwasm_std::{Binary, Uint128};
+use cosmwasm_std::{Binary, Uint256};
 use cw_utils::Expiration;
 
 #[cw_serde]
-
 pub enum Cw20ExecuteMsg {
     /// Transfer is a base message to move tokens to another account without triggering actions
-    Transfer { recipient: String, amount: Uint128 },
+    Transfer { recipient: String, amount: Uint256 },
     /// Burn is a base message to destroy tokens forever
-    Burn { amount: Uint128 },
+    Burn { amount: Uint256 },
     /// Send is a base message to transfer tokens to a contract and trigger an action
     /// on the receiving contract.
     Send {
         contract: String,
-        amount: Uint128,
+        amount: Uint256,
         msg: Binary,
     },
     /// Only with "approval" extension. Allows spender to access an additional amount tokens
@@ -22,7 +21,7 @@ pub enum Cw20ExecuteMsg {
     /// expiration with this one.
     IncreaseAllowance {
         spender: String,
-        amount: Uint128,
+        amount: Uint256,
         expires: Option<Expiration>,
     },
     /// Only with "approval" extension. Lowers the spender's access of tokens
@@ -30,7 +29,7 @@ pub enum Cw20ExecuteMsg {
     /// allowance expiration with this one.
     DecreaseAllowance {
         spender: String,
-        amount: Uint128,
+        amount: Uint256,
         expires: Option<Expiration>,
     },
     /// Only with "approval" extension. Transfers amount tokens from owner -> recipient
@@ -38,21 +37,21 @@ pub enum Cw20ExecuteMsg {
     TransferFrom {
         owner: String,
         recipient: String,
-        amount: Uint128,
+        amount: Uint256,
     },
     /// Only with "approval" extension. Sends amount tokens from owner -> contract
     /// if `env.sender` has sufficient pre-approval.
     SendFrom {
         owner: String,
         contract: String,
-        amount: Uint128,
+        amount: Uint256,
         msg: Binary,
     },
     /// Only with "approval" extension. Destroys tokens forever
-    BurnFrom { owner: String, amount: Uint128 },
+    BurnFrom { owner: String, amount: Uint256 },
     /// Only with the "mintable" extension. If authorized, creates amount new tokens
     /// and adds to the recipient balance.
-    Mint { recipient: String, amount: Uint128 },
+    Mint { recipient: String, amount: Uint256 },
     /// Only with the "mintable" extension. The current minter may set
     /// a new minter. Setting the minter to None will remove the
     /// token's minter forever.

@@ -1,4 +1,3 @@
-use schemars::JsonSchema;
 use std::fmt;
 
 #[cfg(not(feature = "library"))]
@@ -62,7 +61,7 @@ pub fn execute_execute<T>(
     msgs: Vec<CosmosMsg<T>>,
 ) -> Result<Response<T>, ContractError>
 where
-    T: Clone + fmt::Debug + PartialEq + JsonSchema,
+    T: Clone + fmt::Debug + PartialEq,
 {
     if !can_execute(deps.as_ref(), info.sender.as_ref())? {
         Err(ContractError::Unauthorized {})
@@ -146,25 +145,26 @@ pub fn query_can_execute(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use cosmwasm_std::testing::{mock_dependencies, mock_env, mock_info};
+    use cosmwasm_std::testing::{message_info, mock_dependencies, mock_env};
     use cosmwasm_std::{coin, coins, BankMsg, StakingMsg, SubMsg, WasmMsg};
+    use easy_addr::addr;
 
     #[test]
     fn instantiate_and_modify_config() {
         let mut deps = mock_dependencies();
 
-        let alice = deps.api.addr_make("alice").to_string();
-        let bob = deps.api.addr_make("bob").to_string();
-        let carl = deps.api.addr_make("carl").to_string();
+        let alice = deps.api.addr_make("alice");
+        let bob = deps.api.addr_make("bob");
+        let carl = deps.api.addr_make("carl");
 
-        let anyone = "anyone";
+        let anyone = &Addr::unchecked(addr!("anyone"));
 
         // instantiate the contract
         let instantiate_msg = InstantiateMsg {
             admins: vec![alice.to_string(), bob.to_string(), carl.to_string()],
             mutable: true,
         };
-        let info = mock_info(anyone, &[]);
+        let info = message_info(anyone, &[]);
         instantiate(deps.as_mut(), mock_env(), info, instantiate_msg).unwrap();
 
         // ensure expected config
@@ -178,15 +178,15 @@ mod tests {
         let msg = ExecuteMsg::UpdateAdmins {
             admins: vec![anyone.to_string()],
         };
-        let info = mock_info(anyone, &[]);
+        let info = message_info(anyone, &[]);
         let err = execute(deps.as_mut(), mock_env(), info, msg).unwrap_err();
-        assert_eq!(err, ContractError::Unauthorized {});
+        assert_eq!(err.to_string(), ContractError::Unauthorized {}.to_string());
 
         // but alice can kick out carl
         let msg = ExecuteMsg::UpdateAdmins {
             admins: vec![alice.to_string(), bob.to_string()],
         };
-        let info = mock_info(&alice, &[]);
+        let info = message_info(&alice, &[]);
         execute(deps.as_mut(), mock_env(), info, msg).unwrap();
 
         // ensure expected config
@@ -197,15 +197,15 @@ mod tests {
         assert_eq!(query_admin_list(deps.as_ref()).unwrap(), expected);
 
         // carl cannot freeze it
-        let info = mock_info(&carl, &[]);
+        let info = message_info(&carl, &[]);
         let err = execute(deps.as_mut(), mock_env(), info, ExecuteMsg::Freeze {}).unwrap_err();
-        assert_eq!(err, ContractError::Unauthorized {});
+        assert_eq!(err.to_string(), ContractError::Unauthorized {}.to_string());
 
         // but bob can
-        let info = mock_info(&bob, &[]);
+        let info = message_info(&bob, &[]);
         execute(deps.as_mut(), mock_env(), info, ExecuteMsg::Freeze {}).unwrap();
         let expected = AdminListResponse {
-            admins: vec![alice.to_string(), bob],
+            admins: vec![alice.to_string(), bob.to_string()],
             mutable: false,
         };
         assert_eq!(query_admin_list(deps.as_ref()).unwrap(), expected);
@@ -214,25 +214,25 @@ mod tests {
         let msg = ExecuteMsg::UpdateAdmins {
             admins: vec![alice.to_string()],
         };
-        let info = mock_info(&alice, &[]);
+        let info = message_info(&alice, &[]);
         let err = execute(deps.as_mut(), mock_env(), info, msg).unwrap_err();
-        assert_eq!(err, ContractError::Unauthorized {});
+        assert_eq!(err.to_string(), ContractError::Unauthorized {}.to_string());
     }
 
     #[test]
     fn execute_messages_has_proper_permissions() {
         let mut deps = mock_dependencies();
 
-        let alice = deps.api.addr_make("alice").to_string();
-        let bob = deps.api.addr_make("bob").to_string();
-        let carl = deps.api.addr_make("carl").to_string();
+        let alice = deps.api.addr_make("alice");
+        let bob = deps.api.addr_make("bob");
+        let carl = deps.api.addr_make("carl");
 
         // instantiate the contract
         let instantiate_msg = InstantiateMsg {
-            admins: vec![alice, carl.to_string()],
+            admins: vec![alice.to_string(), carl.to_string()],
             mutable: false,
         };
-        let info = mock_info(&bob, &[]);
+        let info = message_info(&bob, &[]);
         instantiate(deps.as_mut(), mock_env(), info, instantiate_msg).unwrap();
 
         let freeze: ExecuteMsg<Empty> = ExecuteMsg::Freeze {};
@@ -254,12 +254,12 @@ mod tests {
         let execute_msg = ExecuteMsg::Execute { msgs: msgs.clone() };
 
         // bob cannot execute them
-        let info = mock_info(&bob, &[]);
+        let info = message_info(&bob, &[]);
         let err = execute(deps.as_mut(), mock_env(), info, execute_msg.clone()).unwrap_err();
-        assert_eq!(err, ContractError::Unauthorized {});
+        assert_eq!(err.to_string(), ContractError::Unauthorized {}.to_string());
 
         // but carl can
-        let info = mock_info(&carl, &[]);
+        let info = message_info(&carl, &[]);
         let res = execute(deps.as_mut(), mock_env(), info, execute_msg).unwrap();
         assert_eq!(
             res.messages,
@@ -275,14 +275,14 @@ mod tests {
         let alice = deps.api.addr_make("alice").to_string();
         let bob = deps.api.addr_make("bob").to_string();
 
-        let anyone = "anyone";
+        let anyone = &deps.api.addr_make("anyone");
 
         // instantiate the contract
         let instantiate_msg = InstantiateMsg {
             admins: vec![alice.to_string(), bob.to_string()],
             mutable: false,
         };
-        let info = mock_info(anyone, &[]);
+        let info = message_info(anyone, &[]);
         instantiate(deps.as_mut(), mock_env(), info, instantiate_msg).unwrap();
 
         // let us make some queries... different msg types by owner and by other

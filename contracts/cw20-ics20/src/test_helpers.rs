@@ -5,7 +5,7 @@ use crate::ibc::{ibc_channel_connect, ibc_channel_open, ICS20_ORDERING, ICS20_VE
 use crate::state::ChannelInfo;
 
 use cosmwasm_std::testing::{
-    mock_dependencies, mock_env, mock_info, MockApi, MockQuerier, MockStorage,
+    message_info, mock_dependencies, mock_env, MockApi, MockQuerier, MockStorage,
 };
 use cosmwasm_std::{
     DepsMut, IbcChannel, IbcChannelConnectMsg, IbcChannelOpenMsg, IbcEndpoint, OwnedDeps,
@@ -75,7 +75,7 @@ pub fn setup(
         gov_contract: deps.api.addr_make("gov").to_string(),
         allowlist,
     };
-    let info = mock_info("anyone", &[]);
+    let info = message_info(&deps.api.addr_make("anyone"), &[]);
     let res = instantiate(deps.as_mut(), mock_env(), info, instantiate_msg).unwrap();
     assert_eq!(0, res.messages.len());
 

@@ -1,7 +1,6 @@
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{
-    to_json_binary, Addr, CosmosMsg, CustomQuery, QuerierWrapper, QueryRequest, StdResult, WasmMsg,
-    WasmQuery,
+    to_json_binary, Addr, CosmosMsg, CustomQuery, QuerierWrapper, QueryRequest, StdResult,   WasmMsg, WasmQuery
 };
 
 use crate::msg::Cw4ExecuteMsg;
@@ -95,7 +94,7 @@ impl Cw4Contract {
         height: impl Into<Option<u64>>,
     ) -> StdResult<Option<u64>> {
         if let Some(weight) = self.member_at_height(querier, member.to_string(), height.into())? {
-            if weight >= 1 {
+            if weight >= 1u64 {
                 return Ok(Some(weight));
             }
         }

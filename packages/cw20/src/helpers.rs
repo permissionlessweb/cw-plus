@@ -1,6 +1,6 @@
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{
-    to_json_binary, Addr, CosmosMsg, CustomQuery, QuerierWrapper, QueryRequest, StdResult, Uint128,
+    to_json_binary, Addr, CosmosMsg, CustomQuery, QuerierWrapper, QueryRequest, StdResult, Uint256,
     WasmMsg, WasmQuery,
 };
 
@@ -43,7 +43,7 @@ impl Cw20Contract {
     }
 
     /// Get token balance for the given address
-    pub fn balance<T, CQ>(&self, querier: &QuerierWrapper<CQ>, address: T) -> StdResult<Uint128>
+    pub fn balance<T, CQ>(&self, querier: &QuerierWrapper<CQ>, address: T) -> StdResult<Uint256>
     where
         T: Into<String>,
         CQ: CustomQuery,

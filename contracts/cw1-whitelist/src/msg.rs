@@ -1,5 +1,3 @@
-use schemars::JsonSchema;
-
 use std::fmt;
 
 use cosmwasm_schema::{cw_serde, QueryResponses};
@@ -14,7 +12,7 @@ pub struct InstantiateMsg {
 #[cw_serde]
 pub enum ExecuteMsg<T = Empty>
 where
-    T: Clone + fmt::Debug + PartialEq + JsonSchema,
+    T: Clone + fmt::Debug + PartialEq,
 {
     /// Execute requests the contract to re-dispatch all these messages with the
     /// contract's address as sender. Every implementation has it's own logic to
@@ -31,7 +29,7 @@ where
 #[derive(QueryResponses)]
 pub enum QueryMsg<T = Empty>
 where
-    T: Clone + fmt::Debug + PartialEq + JsonSchema,
+    T: Clone + fmt::Debug + PartialEq,
 {
     /// Shows all admins and whether or not it is mutable
     #[returns(AdminListResponse)]

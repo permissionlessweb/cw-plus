@@ -1,4 +1,7 @@
 # Changelog
+## Unreleased
+- major upgrade core cosmwasm @v3
+- cw20: replace Uint128 with Uint256 ( mirrors type now used for native Coin) 
 
 ## [v2.0.0](https://github.com/CosmWasm/cw-plus/tree/v2.0.0) (2024-03-26)
 

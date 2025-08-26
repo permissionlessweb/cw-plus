@@ -1,5 +1,3 @@
-use schemars::JsonSchema;
-use serde::{Deserialize, Serialize};
 use std::fmt;
 
 use cosmwasm_schema::cw_serde;
@@ -10,7 +8,7 @@ use cw_utils::Expiration;
 
 pub enum Cw3ExecuteMsg<T = Empty>
 where
-    T: Clone + fmt::Debug + PartialEq + JsonSchema,
+    T: Clone + fmt::Debug + PartialEq,
 {
     Propose {
         title: String,
@@ -31,8 +29,7 @@ where
     },
 }
 
-#[derive(Serialize, Deserialize, Clone, Copy, PartialEq, Eq, JsonSchema, Debug)]
-#[serde(rename_all = "lowercase")]
+#[cw_serde]
 pub enum Vote {
     /// Marks support for the proposal.
     Yes,

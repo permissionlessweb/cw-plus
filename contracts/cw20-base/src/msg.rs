@@ -1,5 +1,5 @@
 use cosmwasm_schema::{cw_serde, QueryResponses};
-use cosmwasm_std::{StdError, StdResult, Uint128};
+use cosmwasm_std::{StdError, StdResult, Uint256};
 use cw20::{Cw20Coin, Logo, MinterResponse};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
@@ -26,24 +26,24 @@ pub struct InstantiateMsg {
 }
 
 impl InstantiateMsg {
-    pub fn get_cap(&self) -> Option<Uint128> {
+    pub fn get_cap(&self) -> Option<Uint256> {
         self.mint.as_ref().and_then(|v| v.cap)
     }
 
     pub fn validate(&self) -> StdResult<()> {
         // Check name, symbol, decimals
         if !self.has_valid_name() {
-            return Err(StdError::generic_err(
+            return Err(StdError::msg(
                 "Name is not in the expected format (3-50 UTF-8 bytes)",
             ));
         }
         if !self.has_valid_symbol() {
-            return Err(StdError::generic_err(
+            return Err(StdError::msg(
                 "Ticker symbol is not in expected format [a-zA-Z\\-]{3,12}",
             ));
         }
         if self.decimals > 18 {
-            return Err(StdError::generic_err("Decimals must not exceed 18"));
+            return Err(StdError::msg("Decimals must not exceed 18"));
         }
         Ok(())
     }
