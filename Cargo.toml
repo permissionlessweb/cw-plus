@@ -10,28 +10,28 @@ version = "3.0.0"
 [workspace.dependencies]
 cosmwasm-schema      = { version = "3.0.1" }
 cosmwasm-std         = { version = "3.0.1" }
-cw2                  = { version = "3.0.0" }
-cw-controllers       = { version = "3.0.0" }
+cw2                  = { path = "../cw-minus/packages/cw2" }
+cw-controllers       = { path = "../cw-minus/packages/controllers" }
 cw-multi-test        = { version = "3.0.1", features = ["cosmwasm_3_0"] }
 cw-storage-plus      = { version = "3.0.0" }
-cw-utils             = { version = "3.0.0" }
+cw-utils             = { path = "../cw-minus/packages/cw-utils" }
 schemars             = { version = "0.8.4" }
 semver               = { version = "1" }
 serde                = { version = "1.0.188", default-features = false, features = ["derive"] }
 thiserror            = { version = "1.0.57" }
 
 # Packages
-cw1                  = { path = "packages/cw1", version = "3.0.0" }
-cw20                 = { path = "packages/cw20", version = "3.0.0" }
-cw3                  = { path = "packages/cw3", version = "3.0.0" }
-cw4                  = { path = "packages/cw4", version = "3.0.0" }
+cw1                  = { path = "packages/cw1" }
+cw20                 = { path = "packages/cw20" }
+cw3                  = { path = "packages/cw3" }
+cw4                  = { path = "packages/cw4" }
 easy-addr            = { path = "packages/easy-addr" }
 
 # Contracts
-cw1-whitelist        = { path = "contracts/cw1-whitelist", version = "3.0.0", features = ["library"] }
-cw20-base            = { path = "contracts/cw20-base", version = "3.0.0", features = ["library"] }
+cw1-whitelist        = { path = "contracts/cw1-whitelist" }
+cw20-base            = { path = "contracts/cw20-base" }
 cw3-fixed-multisig   = { path = "contracts/cw3-fixed-multisig", version = "3.0.0", features = ["library"] }
-cw4-group            = { path = "contracts/cw4-group", version = "3.0.0" }
+cw4-group            = { path = "contracts/cw4-group" }
 
 [profile.release.package.cw1-subkeys]
 codegen-units = 1
