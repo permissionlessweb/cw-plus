@@ -8,12 +8,12 @@ resolver = "2"
 version = "3.0.0"
 
 [workspace.dependencies]
-cosmwasm-schema      = { version = "3.0.1" }
-cosmwasm-std         = { version = "3.0.1" }
+cosmwasm-schema      = { version = "3.0.4" }
+cosmwasm-std         = { version = "3.0.4" }
 cw2                  = { path = "../cw-minus/packages/cw2" }
 cw-controllers       = { path = "../cw-minus/packages/controllers" }
 cw-multi-test        = { version = "3.0.1", features = ["cosmwasm_3_0"] }
-cw-storage-plus      = { version = "3.0.0" }
+cw-storage-plus      = { version = "3.0.1" }
 cw-utils             = { path = "../cw-minus/packages/cw-utils" }
 schemars             = { version = "0.8.4" }
 semver               = { version = "1" }
