@@ -8,30 +8,30 @@ resolver = "2"
 version = "3.0.0"
 
 [workspace.dependencies]
-cosmwasm-schema      = { version = "3.0.4" }
-cosmwasm-std         = { version = "3.0.4" }
-cw2                  = { path = "../cw-minus/packages/cw2" }
-cw-controllers       = { path = "../cw-minus/packages/controllers" }
-cw-multi-test        = { version = "3.0.1", features = ["cosmwasm_3_0"] }
-cw-storage-plus      = { version = "3.0.1" }
-cw-utils             = { path = "../cw-minus/packages/cw-utils" }
+cosmwasm-schema = { git = "https://github.com/permissionlessweb/cosmwasm", branch = "mvp" }
+cosmwasm-std = { git = "https://github.com/permissionlessweb/cosmwasm", branch = "mvp" }
+cw2 = { git = "https://github.com/permissionlessweb/cw-minus", branch = "main" }
+cw-controllers = { git = "https://github.com/permissionlessweb/cw-minus", branch = "main" }
+cw-multi-test = { git = "https://github.com/permissionlessweb/cw-multi-test", branch = "mvp" }
+cw-storage-plus = { git = "https://github.com/permissionlessweb/cw-storage-plus", branch = "mvp" }
+cw-utils = { git = "https://github.com/permissionlessweb/cw-minus", branch = "main" }
 schemars             = { version = "0.8.4" }
 semver               = { version = "1" }
 serde                = { version = "1.0.188", default-features = false, features = ["derive"] }
 thiserror            = { version = "1.0.57" }
 
 # Packages
-cw1                  = { path = "packages/cw1" }
-cw20                 = { path = "packages/cw20" }
-cw3                  = { path = "packages/cw3" }
-cw4                  = { path = "packages/cw4" }
+cw1 = { git = "https://github.com/permissionlessweb/cw-plus", branch = "main" }
+cw20 = { git = "https://github.com/permissionlessweb/cw-plus", branch = "main" }
+cw3 = { git = "https://github.com/permissionlessweb/cw-plus", branch = "main" }
+cw4 = { git = "https://github.com/permissionlessweb/cw-plus", branch = "main" }
 easy-addr            = { path = "packages/easy-addr" }
 
 # Contracts
-cw1-whitelist        = { path = "contracts/cw1-whitelist" }
-cw20-base            = { path = "contracts/cw20-base" }
+cw1-whitelist = { git = "https://github.com/permissionlessweb/cw-plus", branch = "main" }
+cw20-base = { git = "https://github.com/permissionlessweb/cw-plus", branch = "main" }
 cw3-fixed-multisig   = { path = "contracts/cw3-fixed-multisig", version = "3.0.0", features = ["library"] }
-cw4-group            = { path = "contracts/cw4-group" }
+cw4-group = { git = "https://github.com/permissionlessweb/cw-plus", branch = "main" }
 
 [profile.release.package.cw1-subkeys]
 codegen-units = 1
