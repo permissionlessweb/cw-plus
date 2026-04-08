@@ -2,7 +2,7 @@
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
     coins, from_json, to_json_binary, Addr, BankMsg, Binary, Deps, DepsMut, Env, MessageInfo,
-    Order, Response, StdResult, Storage, SubMsg, Uint128, WasmMsg,
+    Order, Response, StdResult, Storage, SubMsg, Uint128, Uint256, WasmMsg,
 };
 
 use cw2::set_contract_version;
@@ -40,7 +40,7 @@ pub fn instantiate(
 
     let config = Config {
         denom: msg.denom,
-        tokens_per_weight: msg.tokens_per_weight,
+        tokens_per_weight: msg.tokens_per_weight.to_string().parse()?,
         min_bond,
         unbonding_period: msg.unbonding_period,
     };
@@ -103,7 +103,7 @@ pub fn execute_bond(
 
     // update the sender's stake
     let new_stake = STAKE.update(deps.storage, &sender, |stake| -> StdResult<_> {
-        Ok(stake.unwrap_or_default() + amount)
+        Ok(stake.unwrap_or_default() + amount.to_string().parse::<Uint128>()?)
     })?;
 
     let messages = update_membership(
@@ -179,7 +179,7 @@ pub fn execute_unbond(
         .add_attribute("sender", info.sender))
 }
 
-pub fn must_pay_funds(balance: &NativeBalance, denom: &str) -> Result<Uint128, ContractError> {
+pub fn must_pay_funds(balance: &NativeBalance, denom: &str) -> Result<Uint256, ContractError> {
     match balance.0.len() {
         0 => Err(ContractError::NoFunds {}),
         1 => {
@@ -264,7 +264,7 @@ pub fn execute_claim(
             let amount_str = coin_to_string(release, addr.as_str());
             let transfer = Cw20ExecuteMsg::Transfer {
                 recipient: info.sender.clone().into(),
-                amount: release,
+                amount: release.into(),
             };
             let message = SubMsg::new(WasmMsg::Execute {
                 contract_addr: addr.into(),
@@ -357,10 +357,8 @@ fn list_members(
 
 #[cfg(test)]
 mod tests {
-    use cosmwasm_std::testing::{mock_dependencies, mock_env, mock_info};
-    use cosmwasm_std::{
-        coin, from_json, CosmosMsg, OverflowError, OverflowOperation, StdError, Storage,
-    };
+    use cosmwasm_std::testing::{message_info, mock_dependencies, mock_env};
+    use cosmwasm_std::{coin, from_json, CosmosMsg, Storage};
     use cw20::Denom;
     use cw4::{member_key, TOTAL_KEY};
     use cw_controllers::{AdminError, Claim, HookError};
@@ -404,7 +402,7 @@ mod tests {
             unbonding_period,
             admin: Some(INIT_ADMIN.into()),
         };
-        let info = mock_info("creator", &[]);
+        let info = message_info(&Addr::unchecked(addr!("creator")), &[]);
         instantiate(deps, mock_env(), info, msg).unwrap();
     }
 
@@ -416,7 +414,7 @@ mod tests {
             unbonding_period,
             admin: Some(INIT_ADMIN.into()),
         };
-        let info = mock_info("creator", &[]);
+        let info = message_info(&Addr::unchecked(addr!("creator")), &[]);
         instantiate(deps, mock_env(), info, msg).unwrap();
     }
 
@@ -424,10 +422,14 @@ mod tests {
         let mut env = mock_env();
         env.block.height += height_delta;
 
-        for (addr, stake) in &[(USER1, user1), (USER2, user2), (USER3, user3)] {
+        for (addr, stake) in &[
+            (Addr::unchecked(USER1), user1),
+            (Addr::unchecked(USER2), user2),
+            (Addr::unchecked(USER3), user3),
+        ] {
             if *stake != 0 {
                 let msg = ExecuteMsg::Bond {};
-                let info = mock_info(addr, &coins(*stake, DENOM));
+                let info = message_info(&addr, &coins(*stake, DENOM));
                 execute(deps.branch(), env.clone(), info, msg).unwrap();
             }
         }
@@ -437,14 +439,18 @@ mod tests {
         let mut env = mock_env();
         env.block.height += height_delta;
 
-        for (addr, stake) in &[(USER1, user1), (USER2, user2), (USER3, user3)] {
+        for (addr, stake) in &[
+            (Addr::unchecked(USER1), user1),
+            (Addr::unchecked(USER2), user2),
+            (Addr::unchecked(USER3), user3),
+        ] {
             if *stake != 0 {
                 let msg = ExecuteMsg::Receive(Cw20ReceiveMsg {
                     sender: addr.to_string(),
-                    amount: Uint128::new(*stake),
+                    amount: Uint128::new(*stake).into(),
                     msg: to_json_binary(&ReceiveMsg::Bond {}).unwrap(),
                 });
-                let info = mock_info(CW20_ADDRESS, &[]);
+                let info = message_info(&Addr::unchecked(CW20_ADDRESS), &[]);
                 execute(deps.branch(), env.clone(), info, msg).unwrap();
             }
         }
@@ -459,7 +465,7 @@ mod tests {
                 let msg = ExecuteMsg::Unbond {
                     tokens: Uint128::new(*stake),
                 };
-                let info = mock_info(addr, &[]);
+                let info = message_info(&Addr::unchecked(*addr), &[]);
                 execute(deps.branch(), env.clone(), info, msg).unwrap();
             }
         }
@@ -597,13 +603,11 @@ mod tests {
         };
         let mut env = mock_env();
         env.block.height += 5;
-        let info = mock_info(USER2, &[]);
+        let info = message_info(&Addr::unchecked(USER2), &[]);
         let err = execute(deps.as_mut(), env, info, msg).unwrap_err();
         assert_eq!(
-            err,
-            ContractError::Std(StdError::overflow(OverflowError::new(
-                OverflowOperation::Sub,
-            )))
+            err.to_string(),
+            "kind: Overflow, error: Cannot Sub with given operands"
         );
     }
 
@@ -656,7 +660,7 @@ mod tests {
         let res = execute(
             deps.as_mut(),
             env,
-            mock_info(USER1, &[]),
+            message_info(&Addr::unchecked(USER1), &[]),
             ExecuteMsg::Claim {},
         )
         .unwrap();
@@ -674,7 +678,7 @@ mod tests {
                     parsed,
                     Cw20ExecuteMsg::Transfer {
                         recipient: USER1.into(),
-                        amount: Uint128::new(7_900)
+                        amount: Uint256::new(7_900)
                     }
                 );
             }
@@ -756,11 +760,14 @@ mod tests {
         let err = execute(
             deps.as_mut(),
             env2,
-            mock_info(USER1, &[]),
+            message_info(&Addr::unchecked(USER1), &[]),
             ExecuteMsg::Claim {},
         )
         .unwrap_err();
-        assert_eq!(err, ContractError::NothingToClaim {});
+        assert_eq!(
+            err.to_string(),
+            ContractError::NothingToClaim {}.to_string()
+        );
 
         // now mature first section, withdraw that
         let mut env3 = mock_env();
@@ -769,7 +776,7 @@ mod tests {
         let res = execute(
             deps.as_mut(),
             env3.clone(),
-            mock_info(USER1, &[]),
+            message_info(&Addr::unchecked(USER1), &[]),
             ExecuteMsg::Claim {},
         )
         .unwrap();
@@ -785,7 +792,7 @@ mod tests {
         let res = execute(
             deps.as_mut(),
             env3.clone(),
-            mock_info(USER2, &[]),
+            message_info(&Addr::unchecked(USER2), &[]),
             ExecuteMsg::Claim {},
         )
         .unwrap();
@@ -801,11 +808,14 @@ mod tests {
         let err = execute(
             deps.as_mut(),
             env3,
-            mock_info(USER3, &[]),
+            message_info(&Addr::unchecked(USER3), &[]),
             ExecuteMsg::Claim {},
         )
         .unwrap_err();
-        assert_eq!(err, ContractError::NothingToClaim {});
+        assert_eq!(
+            err.to_string(),
+            ContractError::NothingToClaim {}.to_string()
+        );
 
         // claims updated properly
         assert_eq!(get_claims(deps.as_ref(), &Addr::unchecked(USER1)), vec![]);
@@ -828,7 +838,7 @@ mod tests {
         let res = execute(
             deps.as_mut(),
             env4,
-            mock_info(USER2, &[]),
+            message_info(&Addr::unchecked(USER2), &[]),
             ExecuteMsg::Claim {},
         )
         .unwrap();
@@ -860,7 +870,7 @@ mod tests {
         };
 
         // non-admin cannot add hook
-        let user_info = mock_info(USER1, &[]);
+        let user_info = message_info(&Addr::unchecked(USER1), &[]);
         let err = execute(
             deps.as_mut(),
             mock_env(),
@@ -868,10 +878,13 @@ mod tests {
             add_msg.clone(),
         )
         .unwrap_err();
-        assert_eq!(err, HookError::Admin(AdminError::NotAdmin {}).into());
+        assert_eq!(
+            err.to_string(),
+            HookError::Admin(AdminError::NotAdmin {}).to_string()
+        );
 
         // admin can add it, and it appears in the query
-        let admin_info = mock_info(INIT_ADMIN, &[]);
+        let admin_info = message_info(&Addr::unchecked(INIT_ADMIN), &[]);
         let _ = execute(
             deps.as_mut(),
             mock_env(),
@@ -887,7 +900,7 @@ mod tests {
             addr: contract2.clone(),
         };
         let err = execute(deps.as_mut(), mock_env(), admin_info.clone(), remove_msg).unwrap_err();
-        assert_eq!(err, HookError::HookNotRegistered {}.into());
+        assert_eq!(err.to_string(), HookError::HookNotRegistered {}.to_string());
 
         // add second contract
         let add_msg2 = ExecuteMsg::AddHook {
@@ -899,12 +912,18 @@ mod tests {
 
         // cannot re-add an existing contract
         let err = execute(deps.as_mut(), mock_env(), admin_info.clone(), add_msg).unwrap_err();
-        assert_eq!(err, HookError::HookAlreadyRegistered {}.into());
+        assert_eq!(
+            err.to_string(),
+            HookError::HookAlreadyRegistered {}.to_string()
+        );
 
         // non-admin cannot remove
         let remove_msg = ExecuteMsg::RemoveHook { addr: contract1 };
         let err = execute(deps.as_mut(), mock_env(), user_info, remove_msg.clone()).unwrap_err();
-        assert_eq!(err, HookError::Admin(AdminError::NotAdmin {}).into());
+        assert_eq!(
+            err.to_string(),
+            HookError::Admin(AdminError::NotAdmin {}).to_string()
+        );
 
         // remove the original
         let _ = execute(deps.as_mut(), mock_env(), admin_info, remove_msg).unwrap();
@@ -924,7 +943,7 @@ mod tests {
         let contract2 = deps.api.addr_make("hook2").to_string();
 
         // register 2 hooks
-        let admin_info = mock_info(INIT_ADMIN, &[]);
+        let admin_info = message_info(&Addr::unchecked(INIT_ADMIN), &[]);
         let add_msg = ExecuteMsg::AddHook {
             addr: contract1.clone(),
         };
@@ -937,7 +956,7 @@ mod tests {
 
         // check firing on bond
         assert_users(deps.as_ref(), None, None, None, None);
-        let info = mock_info(USER1, &coins(13_800, DENOM));
+        let info = message_info(&Addr::unchecked(USER1), &coins(13_800, DENOM));
         let res = execute(deps.as_mut(), mock_env(), info, ExecuteMsg::Bond {}).unwrap();
         assert_users(deps.as_ref(), Some(13), None, None, None);
 
@@ -953,7 +972,7 @@ mod tests {
         let msg = ExecuteMsg::Unbond {
             tokens: Uint128::new(7_300),
         };
-        let info = mock_info(USER1, &[]);
+        let info = message_info(&Addr::unchecked(USER1), &[]);
         let res = execute(deps.as_mut(), mock_env(), info, msg).unwrap();
         assert_users(deps.as_ref(), Some(6), None, None, None);
 
@@ -972,23 +991,32 @@ mod tests {
         default_instantiate(deps.as_mut());
 
         // cannot bond with 0 coins
-        let info = mock_info(USER1, &[]);
+        let info = message_info(&Addr::unchecked(USER1), &[]);
         let err = execute(deps.as_mut(), mock_env(), info, ExecuteMsg::Bond {}).unwrap_err();
-        assert_eq!(err, ContractError::NoFunds {});
+        assert_eq!(err.to_string(), ContractError::NoFunds {}.to_string());
 
         // cannot bond with incorrect denom
-        let info = mock_info(USER1, &[coin(500, "FOO")]);
+        let info = message_info(&Addr::unchecked(USER1), &[coin(500, "FOO")]);
         let err = execute(deps.as_mut(), mock_env(), info, ExecuteMsg::Bond {}).unwrap_err();
-        assert_eq!(err, ContractError::MissingDenom(DENOM.to_string()));
+        assert_eq!(
+            err.to_string(),
+            ContractError::MissingDenom(DENOM.to_string()).to_string()
+        );
 
         // cannot bond with 2 coins (even if one is correct)
-        let info = mock_info(USER1, &[coin(1234, DENOM), coin(5000, "BAR")]);
+        let info = message_info(
+            &Addr::unchecked(USER1),
+            &[coin(1234, DENOM), coin(5000, "BAR")],
+        );
         let err = execute(deps.as_mut(), mock_env(), info, ExecuteMsg::Bond {}).unwrap_err();
-        assert_eq!(err, ContractError::ExtraDenoms(DENOM.to_string()));
+        assert_eq!(
+            err.to_string(),
+            ContractError::ExtraDenoms(DENOM.to_string()).to_string()
+        );
 
         // can bond with just the proper denom
         // cannot bond with incorrect denom
-        let info = mock_info(USER1, &[coin(500, DENOM)]);
+        let info = message_info(&Addr::unchecked(USER1), &[coin(500, DENOM)]);
         execute(deps.as_mut(), mock_env(), info, ExecuteMsg::Bond {}).unwrap();
     }
 

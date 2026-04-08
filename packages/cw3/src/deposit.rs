@@ -3,7 +3,7 @@ use cw_utils::{must_pay, PaymentError};
 use thiserror::Error;
 
 use cosmwasm_std::{
-    to_json_binary, Addr, BankMsg, Coin, CosmosMsg, Deps, MessageInfo, StdResult, Uint128, WasmMsg,
+    to_json_binary, Addr, BankMsg, Coin, CosmosMsg, Deps, MessageInfo, StdResult, Uint256, WasmMsg,
 };
 use cw20::{Denom, UncheckedDenom};
 
@@ -11,7 +11,7 @@ use cw20::{Denom, UncheckedDenom};
 #[cw_serde]
 pub struct DepositInfo {
     /// The number tokens required for payment.
-    pub amount: Uint128,
+    pub amount: Uint256,
     /// The denom of the deposit payment.
     pub denom: Denom,
     /// Should failed proposals have their deposits refunded?
@@ -24,7 +24,7 @@ pub struct DepositInfo {
 #[cw_serde]
 pub struct UncheckedDepositInfo {
     /// The number tokens required for payment.
-    pub amount: Uint128,
+    pub amount: Uint256,
     /// The denom of the deposit payment.
     pub denom: UncheckedDenom,
     /// Should failed proposals have their deposits refunded?

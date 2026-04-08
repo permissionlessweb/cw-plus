@@ -2,7 +2,7 @@
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
     from_json, to_json_binary, Addr, Binary, Deps, DepsMut, Env, IbcMsg, IbcQuery, MessageInfo,
-    Order, PortIdResponse, Response, StdError, StdResult,
+    MigrateInfo, Order, PortIdResponse, Response, StdError, StdResult,
 };
 use semver::Version;
 
@@ -209,7 +209,12 @@ const MIGRATE_VERSION_2: &str = "0.12.0-alpha1";
 const MIGRATE_VERSION_3: &str = "0.13.0";
 
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn migrate(mut deps: DepsMut, env: Env, msg: MigrateMsg) -> Result<Response, ContractError> {
+pub fn migrate(
+    mut deps: DepsMut,
+    env: Env,
+    msg: MigrateMsg,
+    _info: MigrateInfo,
+) -> Result<Response, ContractError> {
     let version: Version = CONTRACT_VERSION.parse().map_err(from_semver)?;
     let stored = get_contract_version(deps.storage)?;
     let storage_version: Version = stored.version.parse().map_err(from_semver)?;
@@ -268,7 +273,7 @@ pub fn migrate(mut deps: DepsMut, env: Env, msg: MigrateMsg) -> Result<Response,
 }
 
 fn from_semver(err: semver::Error) -> StdError {
-    StdError::generic_err(format!("Semver: {err}"))
+    StdError::msg(format!("Semver: {err}"))
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
@@ -384,8 +389,8 @@ mod test {
     use crate::test_helpers::*;
 
     use cosmwasm_schema::cw_serde;
-    use cosmwasm_std::testing::{mock_env, mock_info, MOCK_CONTRACT_ADDR};
-    use cosmwasm_std::{coin, coins, CosmosMsg, IbcMsg, StdError, Uint128};
+    use cosmwasm_std::testing::{message_info, mock_env, MOCK_CONTRACT_ADDR};
+    use cosmwasm_std::{coin, coins, CosmosMsg, IbcMsg, StdError, Uint256};
 
     use easy_addr::addr;
 
@@ -423,13 +428,13 @@ mod test {
             },
         )
         .unwrap_err();
-        assert_eq!(err, StdError::not_found("type: cw20_ics20::state::ChannelInfo; key: [00, 0C, 63, 68, 61, 6E, 6E, 65, 6C, 5F, 69, 6E, 66, 6F, 63, 68, 61, 6E, 6E, 65, 6C, 2D, 31, 30]"));
+        assert_eq!(err.to_string(), StdError::msg("type: cw20_ics20::state::ChannelInfo; key: [00, 0C, 63, 68, 61, 6E, 6E, 65, 6C, 5F, 69, 6E, 66, 6F, 63, 68, 61, 6E, 6E, 65, 6C, 2D, 31, 30] not found").to_string());
     }
 
     #[test]
     fn proper_checks_on_execute_native() {
-        let foobar = addr!("foobar");
-        let foreign = addr!("foreign-address");
+        let foobar = &Addr::unchecked(addr!("foobar"));
+        let foreign = &Addr::unchecked(addr!("foreign-address"));
 
         let send_channel = "channel-5";
         let mut deps = setup(&[send_channel, "channel-10"], &[]);
@@ -443,7 +448,7 @@ mod test {
 
         // works with proper funds
         let msg = ExecuteMsg::Transfer(transfer.clone());
-        let info = mock_info(foobar, &coins(1234567, "ucosm"));
+        let info = message_info(foobar, &coins(1234567, "ucosm"));
         let res = execute(deps.as_mut(), mock_env(), info, msg).unwrap();
         assert_eq!(res.messages[0].gas_limit, None);
         assert_eq!(1, res.messages.len());
@@ -457,46 +462,57 @@ mod test {
             assert_eq!(timeout, &expected_timeout.into());
             assert_eq!(channel_id.as_str(), send_channel);
             let msg: Ics20Packet = from_json(data).unwrap();
-            assert_eq!(msg.amount, Uint128::new(1234567));
+            assert_eq!(msg.amount, Uint256::new(1234567));
             assert_eq!(msg.denom.as_str(), "ucosm");
-            assert_eq!(msg.sender.as_str(), foobar);
-            assert_eq!(msg.receiver.as_str(), foreign);
+            assert_eq!(msg.sender.as_str(), foobar.as_str());
+            assert_eq!(msg.receiver.as_str(), foreign.as_str());
         } else {
             panic!("Unexpected return message: {:?}", res.messages[0]);
         }
 
         // reject with no funds
         let msg = ExecuteMsg::Transfer(transfer.clone());
-        let info = mock_info(foobar, &[]);
+        let info = message_info(foobar, &[]);
         let err = execute(deps.as_mut(), mock_env(), info, msg).unwrap_err();
-        assert_eq!(err, ContractError::Payment(PaymentError::NoFunds {}));
+        assert_eq!(
+            err.to_string(),
+            ContractError::Payment(PaymentError::NoFunds {}).to_string()
+        );
 
         // reject with multiple tokens funds
         let msg = ExecuteMsg::Transfer(transfer.clone());
-        let info = mock_info(foobar, &[coin(1234567, "ucosm"), coin(54321, "uatom")]);
+        let info = message_info(foobar, &[coin(1234567, "ucosm"), coin(54321, "uatom")]);
         let err = execute(deps.as_mut(), mock_env(), info, msg).unwrap_err();
-        assert_eq!(err, ContractError::Payment(PaymentError::MultipleDenoms {}));
+        assert_eq!(
+            err.to_string(),
+            ContractError::Payment(PaymentError::MultipleDenoms {}).to_string()
+        );
 
         // reject with bad channel id
         transfer.channel = "channel-45".to_string();
         let msg = ExecuteMsg::Transfer(transfer);
-        let info = mock_info(foobar, &coins(1234567, "ucosm"));
+        let info = message_info(foobar, &coins(1234567, "ucosm"));
         let err = execute(deps.as_mut(), mock_env(), info, msg).unwrap_err();
         assert_eq!(
-            err,
+            err.to_string(),
             ContractError::NoSuchChannel {
                 id: "channel-45".to_string()
             }
+            .to_string()
         );
     }
 
     #[test]
     fn proper_checks_on_execute_cw20() {
         let send_channel = "channel-15";
-        let cw20_addr = addr!("my-token");
-        let foreign = addr!("foreign-address");
-        let sender = addr!("my-account");
-        let mut deps = setup(&["channel-3", send_channel], &[(cw20_addr, 123456)]);
+        let cw20_addr = &Addr::unchecked(addr!("my-token"));
+        let foreign = &Addr::unchecked(addr!("foreign-address"));
+        let sender = &Addr::unchecked(addr!("my-account"));
+        let anyone = &Addr::unchecked(addr!("anyone"));
+        let mut deps = setup(
+            &["channel-3", send_channel],
+            &[(cw20_addr.as_str(), 123456)],
+        );
 
         let transfer = TransferMsg {
             channel: send_channel.to_string(),
@@ -506,12 +522,12 @@ mod test {
         };
         let msg = ExecuteMsg::Receive(Cw20ReceiveMsg {
             sender: sender.into(),
-            amount: Uint128::new(888777666),
+            amount: Uint256::new(888777666),
             msg: to_json_binary(&transfer).unwrap(),
         });
 
         // works with proper funds
-        let info = mock_info(cw20_addr, &[]);
+        let info = message_info(cw20_addr, &[]);
         let res = execute(deps.as_mut(), mock_env(), info, msg.clone()).unwrap();
         assert_eq!(1, res.messages.len());
         assert_eq!(res.messages[0].gas_limit, None);
@@ -525,18 +541,21 @@ mod test {
             assert_eq!(timeout, &expected_timeout.into());
             assert_eq!(channel_id.as_str(), send_channel);
             let msg: Ics20Packet = from_json(data).unwrap();
-            assert_eq!(msg.amount, Uint128::new(888777666));
+            assert_eq!(msg.amount, Uint256::new(888777666));
             assert_eq!(msg.denom, format!("cw20:{cw20_addr}"));
-            assert_eq!(msg.sender.as_str(), sender);
-            assert_eq!(msg.receiver.as_str(), foreign);
+            assert_eq!(msg.sender.as_str(), sender.as_str());
+            assert_eq!(msg.receiver.as_str(), foreign.as_str());
         } else {
             panic!("Unexpected return message: {:?}", res.messages[0]);
         }
 
         // reject with tokens funds
-        let info = mock_info("foobar", &coins(1234567, "ucosm"));
+        let info = message_info(anyone, &coins(1234567, "ucosm"));
         let err = execute(deps.as_mut(), mock_env(), info, msg).unwrap_err();
-        assert_eq!(err, ContractError::Payment(PaymentError::NonPayable {}));
+        assert_eq!(
+            err.to_string(),
+            ContractError::Payment(PaymentError::NonPayable {}).to_string()
+        );
     }
 
     #[test]
@@ -544,9 +563,9 @@ mod test {
         let send_channel = "channel-15";
         let mut deps = setup(&[send_channel], &[]);
 
-        let my_account = addr!("my-account");
-        let cw20_addr = addr!("my-token");
-        let foreign = addr!("foreign-address");
+        let my_account = &Addr::unchecked(addr!("my-account"));
+        let cw20_addr = &Addr::unchecked(addr!("my-token"));
+        let foreign = &Addr::unchecked(addr!("foreign-address"));
 
         let transfer = TransferMsg {
             channel: send_channel.to_string(),
@@ -556,14 +575,14 @@ mod test {
         };
         let msg = ExecuteMsg::Receive(Cw20ReceiveMsg {
             sender: my_account.into(),
-            amount: Uint128::new(888777666),
+            amount: Uint256::new(888777666),
             msg: to_json_binary(&transfer).unwrap(),
         });
 
         // rejected as not on allow list
-        let info = mock_info(cw20_addr, &[]);
+        let info = message_info(cw20_addr, &[]);
         let err = execute(deps.as_mut(), mock_env(), info.clone(), msg.clone()).unwrap_err();
-        assert_eq!(err, ContractError::NotOnAllowList);
+        assert_eq!(err.to_string(), ContractError::NotOnAllowList.to_string());
 
         // add a default gas limit
         migrate(
@@ -571,6 +590,10 @@ mod test {
             mock_env(),
             MigrateMsg {
                 default_gas_limit: Some(123456),
+            },
+            MigrateInfo {
+                sender: my_account.clone(),
+                old_migrate_version: None,
             },
         )
         .unwrap();
@@ -586,7 +609,7 @@ mod test {
         let cw20_addr = addr!("my-token");
         let native = "ucosm";
         let mut deps = setup(&[send_channel], &[(cw20_addr, 123456)]);
-
+        let sender = &deps.api.addr_make("anyone");
         // mock that we sent some tokens in both native and cw20 (TODO: cw20)
         // balances set high
         deps.querier
@@ -598,8 +621,8 @@ mod test {
         // channel state a bit lower (some in-flight acks)
         let state = ChannelState {
             // 14000 not accounted for (in-flight)
-            outstanding: Uint128::new(36000),
-            total_sent: Uint128::new(100000),
+            outstanding: Uint256::new(36000),
+            total_sent: Uint256::new(100000),
         };
         CHANNEL_STATE
             .save(deps.as_mut().storage, (send_channel, native), &state)
@@ -611,6 +634,10 @@ mod test {
             mock_env(),
             MigrateMsg {
                 default_gas_limit: Some(123456),
+            },
+            MigrateInfo {
+                sender: sender.clone(),
+                old_migrate_version: None,
             },
         )
         .unwrap();
@@ -629,7 +656,7 @@ mod test {
         let send_channel = "channel-5";
         let mut deps = setup(&[send_channel, "channel-10"], &[]);
 
-        let foobar = "foobar";
+        let foobar = deps.api.addr_make("foobar");
         let foreign = "foreign-address";
 
         let transfer = TransferMsg {
@@ -641,7 +668,7 @@ mod test {
 
         // works with proper funds
         let msg = ExecuteMsg::Transfer(transfer);
-        let info = mock_info(foobar, &coins(1234567, "ucosm"));
+        let info = message_info(&foobar, &coins(1234567, "ucosm"));
         let res = execute(deps.as_mut(), mock_env(), info, msg).unwrap();
         assert_eq!(res.messages[0].gas_limit, None);
         assert_eq!(1, res.messages.len());
@@ -655,9 +682,9 @@ mod test {
             assert_eq!(timeout, &expected_timeout.into());
             assert_eq!(channel_id.as_str(), send_channel);
             let msg: Ics20Packet = from_json(data).unwrap();
-            assert_eq!(msg.amount, Uint128::new(1234567));
+            assert_eq!(msg.amount, Uint256::new(1234567));
             assert_eq!(msg.denom.as_str(), "ucosm");
-            assert_eq!(msg.sender.as_str(), foobar);
+            assert_eq!(msg.sender.as_str(), foobar.as_str());
             assert_eq!(msg.receiver.as_str(), foreign);
             assert_eq!(
                 msg.memo
@@ -690,7 +717,7 @@ mod test {
         .unwrap();
 
         let msg = ExecuteMsg::Transfer(transfer);
-        let info = mock_info("foobar", &coins(1234567, "ucosm"));
+        let info = message_info(&deps.api.addr_make("foobar"), &coins(1234567, "ucosm"));
         let res = execute(deps.as_mut(), mock_env(), info, msg).unwrap();
         assert_eq!(1, res.messages.len());
         if let CosmosMsg::Ibc(IbcMsg::SendPacket {
@@ -706,7 +733,7 @@ mod test {
             // should still work as the memo isn't included
             #[cw_serde]
             struct Ics20PacketNoMemo {
-                pub amount: Uint128,
+                pub amount: Uint256,
                 pub denom: String,
                 pub sender: String,
                 pub receiver: String,

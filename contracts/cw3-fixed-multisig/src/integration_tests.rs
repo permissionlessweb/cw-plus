@@ -1,6 +1,6 @@
 #![cfg(test)]
 
-use cosmwasm_std::{to_json_binary, Empty, Uint128, WasmMsg};
+use cosmwasm_std::{to_json_binary, Empty, Uint256, WasmMsg};
 use cw20::{BalanceResponse, MinterResponse};
 use cw20_base::msg::QueryMsg;
 use cw3::Vote;
@@ -96,10 +96,10 @@ fn cw3_controls_cw20() {
 
     // mint some cw20 tokens according to proposal result
     let mint_recipient = router.api().addr_make("mint_recipient");
-    let mint_amount = Uint128::new(1000);
+    let mint_amount = Uint256::new(1000);
     let cw20_mint_msg = cw20_base::msg::ExecuteMsg::Mint {
         recipient: mint_recipient.to_string(),
-        amount: mint_amount,
+        amount: mint_amount.into(),
     };
 
     let execute_mint_msg = WasmMsg::Execute {

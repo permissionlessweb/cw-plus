@@ -1,4 +1,3 @@
-use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
 use cosmwasm_schema::cw_serde;
@@ -9,7 +8,7 @@ use cosmwasm_std::{
     Ibc3ChannelOpenResponse, IbcBasicResponse, IbcChannel, IbcChannelCloseMsg,
     IbcChannelConnectMsg, IbcChannelOpenMsg, IbcEndpoint, IbcOrder, IbcPacket, IbcPacketAckMsg,
     IbcPacketReceiveMsg, IbcPacketTimeoutMsg, IbcReceiveResponse, Reply, Response, SubMsg,
-    SubMsgResult, Uint128, WasmMsg,
+    SubMsgResult, Uint256, WasmMsg,
 };
 
 use crate::amount::Amount;
@@ -26,10 +25,10 @@ pub const ICS20_ORDERING: IbcOrder = IbcOrder::Unordered;
 /// The format for sending an ics20 packet.
 /// Proto defined here: https://github.com/cosmos/cosmos-sdk/blob/v0.42.0/proto/ibc/applications/transfer/v1/transfer.proto#L11-L20
 /// This is compatible with the JSON serialization
-#[derive(Serialize, Deserialize, Clone, PartialEq, Eq, JsonSchema, Debug, Default)]
+#[derive(Serialize, Deserialize, Clone, PartialEq, Eq, Debug, Default)]
 pub struct Ics20Packet {
-    /// amount of tokens to transfer is encoded as a string, but limited to u64 max
-    pub amount: Uint128,
+    /// amount of tokens to transfer is encoded as a string, but limited to uint256 max
+    pub amount: Uint256,
     /// the token denomination to be transferred
     pub denom: String,
     /// the recipient address on the destination chain
@@ -42,7 +41,7 @@ pub struct Ics20Packet {
 }
 
 impl Ics20Packet {
-    pub fn new<T: Into<String>>(amount: Uint128, denom: T, sender: &str, receiver: &str) -> Self {
+    pub fn new<T: Into<String>>(amount: Uint256, denom: T, sender: &str, receiver: &str) -> Self {
         Ics20Packet {
             denom: denom.into(),
             amount,
@@ -57,7 +56,7 @@ impl Ics20Packet {
     }
 
     pub fn validate(&self) -> Result<(), ContractError> {
-        if self.amount.u128() > (u64::MAX as u128) {
+        if self.amount > Uint256::from(u64::MAX) {
             Err(ContractError::AmountOverflow {})
         } else {
             Ok(())
@@ -402,8 +401,8 @@ mod test {
 
     use crate::contract::{execute, migrate, query_channel};
     use crate::msg::{ExecuteMsg, MigrateMsg, TransferMsg};
-    use cosmwasm_std::testing::{mock_env, mock_info};
-    use cosmwasm_std::{coins, to_json_vec, Addr, IbcEndpoint, IbcMsg, IbcTimeout, Timestamp};
+    use cosmwasm_std::testing::{message_info, mock_env};
+    use cosmwasm_std::{coins, to_json_vec, Addr, IbcEndpoint, IbcMsg, IbcTimeout, MigrateInfo, Timestamp};
     use cw20::Cw20ReceiveMsg;
 
     use easy_addr::addr;
@@ -423,7 +422,7 @@ mod test {
     #[test]
     fn check_packet_json() {
         let packet = Ics20Packet::new(
-            Uint128::new(12345),
+            Uint256::new(12345),
             "ucosm",
             "cosmos1zedxv25ah8fksmg2lzrndrpkvsjqgk4zt5ff7n",
             "wasm1fucynrfkrt684pm8jrt8la5h2csvs5cnldcgqc",
@@ -443,7 +442,7 @@ mod test {
     ) -> SubMsg {
         let msg = Cw20ExecuteMsg::Transfer {
             recipient: recipient.into(),
-            amount: Uint128::new(amount),
+            amount: Uint256::new(amount),
         };
         let exec = WasmMsg::Execute {
             contract_addr: address.into(),
@@ -501,8 +500,8 @@ mod test {
         let cw20_addr = addr!("token-addr");
         let cw20_denom = concat!("cw20:", addr!("token-addr"));
         let local_rcpt = addr!("local-rcpt");
-        let local_sender = addr!("local-sender");
-        let remote_rcpt = addr!("remote-rcpt");
+        let local_sender = &Addr::unchecked(addr!("local-sender"));
+        let remote_rcpt = &Addr::unchecked(addr!("remote-rcpt"));
         let gas_limit = 1234567;
         let mut deps = setup(
             &["channel-1", "channel-7", send_channel],
@@ -531,15 +530,15 @@ mod test {
         };
         let msg = ExecuteMsg::Receive(Cw20ReceiveMsg {
             sender: local_sender.to_string(),
-            amount: Uint128::new(987654321),
+            amount: Uint256::new(987654321),
             msg: to_json_binary(&transfer).unwrap(),
         });
-        let info = mock_info(cw20_addr, &[]);
+        let info = message_info(&Addr::unchecked(cw20_addr), &[]);
         let res = execute(deps.as_mut(), mock_env(), info, msg).unwrap();
         assert_eq!(1, res.messages.len());
         let expected = Ics20Packet {
             denom: cw20_denom.into(),
-            amount: Uint128::new(987654321),
+            amount: Uint256::new(987654321),
             sender: local_sender.to_string(),
             receiver: remote_rcpt.to_string(),
             memo: None,
@@ -589,6 +588,8 @@ mod test {
     #[test]
     fn send_receive_native() {
         let send_channel = "channel-9";
+        let local_sender = &Addr::unchecked(addr!("local-sender"));
+
         let mut deps = setup(&["channel-1", "channel-7", send_channel], &[]);
 
         let denom = "uatom";
@@ -612,7 +613,7 @@ mod test {
             timeout: None,
             memo: None,
         });
-        let info = mock_info("local-sender", &coins(987654321, denom));
+        let info = message_info(local_sender, &coins(987654321, denom));
         execute(deps.as_mut(), mock_env(), info, msg).unwrap();
 
         // query channel state|_|
@@ -650,6 +651,7 @@ mod test {
     fn check_gas_limit_handles_all_cases() {
         let send_channel = "channel-9";
         let allowed = addr!("foobar");
+        let sender = &Addr::unchecked(addr!("my-account"));
         let allowed_gas = 777666;
         let mut deps = setup(&[send_channel], &[(allowed, allowed_gas)]);
 
@@ -668,6 +670,10 @@ mod test {
             mock_env(),
             MigrateMsg {
                 default_gas_limit: Some(def_limit),
+            },
+            MigrateInfo {
+                sender: sender.clone(),
+                old_migrate_version: None,
             },
         )
         .unwrap();

@@ -30,3 +30,4 @@ thiserror = { workspace = true }
 [dev-dependencies]
 cw-multi-test = { workspace = true }
 cw-utils = { workspace = true }
+easy-addr = { workspace = true }
