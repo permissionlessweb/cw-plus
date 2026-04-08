@@ -8,13 +8,13 @@ resolver = "2"
 version = "3.0.0"
 
 [workspace.dependencies]
-cosmwasm-schema = { path = "../ZK/cw/zk-cosmwasm/packages/schema" }
-cosmwasm-std = { path = "../ZK/cw/zk-cosmwasm/packages/std" }
-cw2 = { path = "../ZK/cw/zk-cw-minus/packages/cw2" }
-cw-controllers = { path = "../ZK/cw/zk-cw-minus/packages/controllers" }
+cosmwasm-schema = { git = "https://github.com/permissionlessweb/cosmwasm", branch = "zk-mvp" }
+cosmwasm-std = { git = "https://github.com/permissionlessweb/cosmwasm", branch = "zk-mvp" }
+cw2 = { git = "https://github.com/permissionlessweb/cw-minus", branch = "zk-mvp" }
+cw-controllers = { git = "https://github.com/permissionlessweb/cw-minus", branch = "zk-mvp" }
 cw-multi-test = { path = "../cw-multi-test-fork" }
-cw-storage-plus = { path = "../ZK/cw/zk-storage-plus" }
-cw-utils = { path = "../ZK/cw/zk-cw-minus/packages/cw-utils" }
+cw-storage-plus = { git = "https://github.com/permissionlessweb/cw-storage-plus", branch = "zk-mvp" }
+cw-utils = { git = "https://github.com/permissionlessweb/cw-minus", branch = "zk-mvp" }
 schemars             = { version = "0.8.4" }
 semver               = { version = "1" }
 serde                = { version = "1.0.188", default-features = false, features = ["derive"] }
