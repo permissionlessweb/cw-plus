@@ -1,5 +1,5 @@
 use cosmwasm_schema::cw_serde;
-use cosmwasm_std::{Addr, Deps, StdResult, Uint128};
+use cosmwasm_std::{Addr, Deps, StdResult};
 
 use crate::{Cw20QueryMsg, TokenInfoResponse};
 
@@ -13,12 +13,6 @@ pub enum Denom {
 pub enum UncheckedDenom {
     Native(String),
     Cw20(String),
-}
-
-#[cw_serde]
-pub struct DepositInfo {
-    amount: Uint128,
-    denom: UncheckedDenom,
 }
 
 impl UncheckedDenom {

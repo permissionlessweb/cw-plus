@@ -1,5 +1,5 @@
 [workspace]
-members = ["packages/*", "contracts/*"]
+members = ["contracts/*", "packages/*"]
 
 # Resolver has to be set explicitely in workspaces, see https://github.com/rust-lang/cargo/issues/9956
 resolver = "2"
@@ -8,13 +8,13 @@ resolver = "2"
 version = "3.0.0"
 
 [workspace.dependencies]
-cosmwasm-schema = { git = "https://github.com/permissionlessweb/cosmwasm", branch = "zk-mvp" }
-cosmwasm-std = { git = "https://github.com/permissionlessweb/cosmwasm", branch = "zk-mvp" }
-cw2 = { git = "https://github.com/permissionlessweb/cw-minus", branch = "zk-mvp" }
-cw-controllers = { git = "https://github.com/permissionlessweb/cw-minus", branch = "zk-mvp" }
-cw-multi-test = { package = "abstract-cw-multi-test", git = "https://github.com/permissionlessweb/cw-multi-test-fork", branch = "zk-mvp" }
-cw-storage-plus = { git = "https://github.com/permissionlessweb/cw-storage-plus", branch = "zk-mvp" }
-cw-utils = { git = "https://github.com/permissionlessweb/cw-minus", branch = "zk-mvp" }
+cosmwasm-schema = { path = "../cosmwasm/packages/schema" }
+cosmwasm-std = { path = "../cosmwasm/packages/std", features = ["cosmwasm_2_2"] }
+cw-controllers = { path = "../cw-minus/packages/controllers" }
+cw-multi-test = { package = "abstract-cw-multi-test", path = "../cw-multi-test-fork" }
+cw-storage-plus = { path = "../cw-storage-plus" }
+cw-utils = { path = "../cw-minus/packages/cw-utils" }
+cw2 = { path = "../cw-minus/packages/cw2" }
 schemars             = { version = "0.8.4" }
 semver               = { version = "1" }
 serde                = { version = "1.0.188", default-features = false, features = ["derive"] }
@@ -32,6 +32,28 @@ cw1-whitelist = { path = "contracts/cw1-whitelist" }
 cw20-base = { path = "contracts/cw20-base" }
 cw3-fixed-multisig = { path = "contracts/cw3-fixed-multisig" }
 cw4-group = { path = "contracts/cw4-group" }
+
+[patch.'https://github.com/permissionlessweb/cw-plus']
+cw1 = { path = "packages/cw1" }
+cw1-subkeys = { path = "contracts/cw1-subkeys" }
+cw1-whitelist = { path = "contracts/cw1-whitelist" }
+cw20 = { path = "packages/cw20" }
+cw20-base = { path = "contracts/cw20-base" }
+cw20-ics20 = { path = "contracts/cw20-ics20" }
+cw3 = { path = "packages/cw3" }
+cw3-fixed-multisig = { path = "contracts/cw3-fixed-multisig" }
+cw3-flex-multisig = { path = "contracts/cw3-flex-multisig" }
+cw4 = { path = "packages/cw4" }
+cw4-group = { path = "contracts/cw4-group" }
+cw4-stake = { path = "contracts/cw4-stake" }
+
+[profile.release]
+rpath = false
+lto = true
+overflow-checks = true
+opt-level = 3
+debug = false
+debug-assertions = false
 
 [profile.release.package.cw1-subkeys]
 codegen-units = 1
@@ -64,11 +86,3 @@ incremental = false
 [profile.release.package.cw20-ics20]
 codegen-units = 1
 incremental = false
-
-[profile.release]
-rpath = false
-lto = true
-overflow-checks = true
-opt-level = 3
-debug = false
-debug-assertions = false

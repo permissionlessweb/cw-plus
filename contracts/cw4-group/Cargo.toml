@@ -9,6 +9,9 @@ repository = "https://github.com/CosmWasm/cw-plus"
 homepage = "https://cosmwasm.com"
 documentation = "https://docs.cosmwasm.com"
 
+[package.metadata.optimizer]
+builds = [{ name = "cosmwasm", no-optimize = true }]
+
 exclude = [
   # Those files are rust-optimizer artifacts. You might want to commit them for convenience but they should not be part of the source code publication.
   "artifacts/*",

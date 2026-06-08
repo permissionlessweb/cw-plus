@@ -21,7 +21,7 @@ cosmwasm-schema = { workspace = true }
 cw-utils = { workspace = true }
 cw2 = { workspace = true }
 cw3 = { workspace = true }
-cw3-fixed-multisig = { workspace = true }
+cw3-fixed-multisig = { workspace = true, features = ["library"] }
 cw4 = { workspace = true }
 cw20 = { workspace = true }
 cw-storage-plus = { workspace = true }
