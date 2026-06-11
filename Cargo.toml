@@ -47,6 +47,14 @@ cw4 = { path = "packages/cw4" }
 cw4-group = { path = "contracts/cw4-group" }
 cw4-stake = { path = "contracts/cw4-stake" }
 
+[patch.'https://github.com/permissionlessweb/cosmwasm']
+cosmwasm-std = { path = "../cosmwasm/packages/std" , features = ["cosmwasm_3_0"]}
+cosmwasm-schema = { path = "../cosmwasm/packages/schema" }
+
+[patch.'https://github.com/permissionlessweb/cw-minus']
+cw-controllers = { path = "../cw-minus/packages/controllers" }
+cw-utils = { path = "../cw-minus/packages/cw-utils" }
+
 [profile.release]
 rpath = false
 lto = true
